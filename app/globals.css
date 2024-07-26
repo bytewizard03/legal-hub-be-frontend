@@ -1,33 +1,31 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+.table-responsive {
+  overflow-x: auto;
+  width: 100%;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
+table {
+  width: 100%;
+  min-width: max-content;
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+.navbar-brand img {
+  max-height: 40px; /* Adjust the height of the logo */
+  margin-right: 10px; /* Optional: add some space between the logo and text */
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+.custom-border {
+  border: 2px solid rgb(191 191 191); /* Primary color border */
+  border-radius: 10px; /* Border radius */
+  padding: 15px; /* Optional: Add padding */
+}
+
+/* Loader styles */
+#loader {
+  display: none; /* Initially hidden */
+  text-align: center;
+  margin-top: 20px;
+}
+
+#loader .spinner-border {
+  margin-bottom: 10px;
 }
