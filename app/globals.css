@@ -1,31 +1,4 @@
-.table-responsive {
-  overflow-x: auto;
-  width: 100%;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-table {
-  width: 100%;
-  min-width: max-content;
-}
-
-.navbar-brand img {
-  max-height: 40px; /* Adjust the height of the logo */
-  margin-right: 10px; /* Optional: add some space between the logo and text */
-}
-
-.custom-border {
-  border: 2px solid rgb(191 191 191); /* Primary color border */
-  border-radius: 10px; /* Border radius */
-  padding: 15px; /* Optional: Add padding */
-}
-
-/* Loader styles */
-#loader {
-  display: none; /* Initially hidden */
-  text-align: center;
-  margin-top: 20px;
-}
-
-#loader .spinner-border {
-  margin-bottom: 10px;
-}

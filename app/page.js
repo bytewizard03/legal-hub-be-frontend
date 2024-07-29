@@ -1,8 +1,9 @@
 "use client";
 import React, {useState, useEffect} from 'react';
-import Head from 'next/head';
-import './globals.css';
-
+import styles from  './page.module.css';
+import Image from 'next/image';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import Link from 'next/link';
 
 function Home() {
   const [data,setData] = useState([]);
@@ -15,6 +16,7 @@ function Home() {
   const [totalItems, setTotalItems] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const itemsPerPage = 20;
+
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
 
   
@@ -27,6 +29,7 @@ function Home() {
     loader.style.display = 'block'; // Show loader
 
     try {
+      // to recheck
       let apiUrl = `${baseUrl}/legal/api/get-envelops?page=${page}&limit=${itemsPerPage}`;
       if (searchTerm) {
         apiUrl += `&search=${encodeURIComponent(searchTerm)}`;
@@ -154,6 +157,10 @@ function Home() {
     fetchData(1, searchTerm);
   };
 
+  function applyFilters() {
+    fetchData(1);
+ }
+
   const showError = (message) => {
     const tableBody = document.getElementById("tableBody");
     tableBody.innerHTML = `<tr><td colspan="13" class="text-center text-danger">${message}</td></tr>`;
@@ -161,37 +168,27 @@ function Home() {
 
   return (
     <>
-      <Head>
-        <title>Agreement Generator</title>
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
-          crossorigin="anonymous"
-        />
-      </Head>
       <div className="container py-3">
         <nav className="navbar navbar-expand-lg bg-body-light">
           <div className="container-fluid">
             <a className="navbar-brand" href="#">
-              <img
-                src="/images/eduvanz_logo.jpg"
+              <Image
+                src="/eduvanz_logo.jpg"
                 alt="Logo"
+                className={styles.logo}
+                width={100}
+                height={40} 
               />
               Agreement Generator & Reviewer
             </a>
-            <a
-              className="btn btn-success ms-auto"
-              href="/form/index.html"
-              role="button"
-            >
+            <Link href="/newagreement" className="btn btn-success ms-auto" role="button">
               Generate New Agreement
-            </a>
+            </Link>
           </div>
         </nav>
         <div className="row py-5">
-          <div className="col-md-4 p-2">
-            <div className="card border border-warning-subtle" id="card1">
+          <div className={`col-md-4 p-2 ${styles.cardsContainer}`}>
+            <div className={`card border border-warning-subtle ${styles.card}`} id="card1">
               <div className="card-header bg-white">Reviewal Attention</div>
               <div className="card-body bg-warning-subtle" id="card1Body">
                 <p className="card-text">Renewal Count: {countData.reviewal_count}</p>
@@ -199,7 +196,7 @@ function Home() {
             </div>
           </div>
           <div className="col-md-4 p-2">
-            <div className="card border border-danger-subtle" id="card2">
+            <div className={`card border border-danger-subtle ${styles.card}`} id="card2">
               <div className="card-header bg-white">Expiring next month</div>
               <div className="card-body bg-danger-subtle" id="card2Body">
                 <p className="card-text">Expiring Agreements Next Month: {countData.expiring_next_month}</p>
@@ -207,7 +204,7 @@ function Home() {
             </div>
           </div>
           <div className="col-md-4 p-2">
-            <div className="card border border-success-subtle" id="card3">
+            <div className={`card border border-success-subtle ${styles.card}`} id="card3">
               <div className="card-header bg-white">Total Number of Agreements</div>
               <div className="card-body bg-success-subtle" id="card3Body">
                 <p className="card-text">Total Number of Agreements: {countData.total_agreement}</p>
@@ -215,7 +212,7 @@ function Home() {
             </div>
           </div>
         </div>
-        <div className="row custom-border p-3">
+        <div className={`row custom-border p-3 ${styles.tableContainer}`}>
           {/* Loader element */}
           <div id="loader" className="text-center my-3">
             <div className="spinner-border text-primary" role="status">
@@ -224,30 +221,53 @@ function Home() {
             <p className="mt-2">Loading data...</p>
           </div>
 
-          {/* Search box */}
-          <div className="input-group mb-3">
-            <input
-              type="text"
-              id="searchInput"
-              className="form-control"
-              placeholder="Search by key terms..."
-              aria-label="Search by key terms"
-              aria-describedby="searchButton"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <button
-              className="btn btn-outline-secondary"
-              type="button"
-              id="searchButton"
-              onClick={performSearch}
-            >
-              Search
-            </button>
+          {/* search box */}
+        <div className="row">
+          <div className="col-md-3">
+            <div className="input-group mb-3">
+              <select id="agreementStatus" className="form-select">
+                <option value="">Select Agreement Status</option>
+                <option value="sent">Sent</option>
+                <option value="completed">Completed</option>
+              </select>
+              <button className="btn btn-outline-success" type="button" onClick={applyFilters}>Filter</button>
+            </div>
           </div>
 
-          <div className="table-responsive">
-            <table className="table table-bordered">
+          <div className="col-md-3">
+            <div className="input-group mb-3">
+              <select id="fileType" className="form-select">
+                <option value="">Select document type</option>
+                <option value="no_liability">No liability agreement</option>
+                <option value="institute_isa">Institute ISA agreement</option>
+                <option value="digital_partner">Digital Partner agreement</option>
+              </select>
+              <button className="btn btn-outline-success" type="button" onClick={applyFilters}>Filter</button>
+            </div>
+          </div>
+
+          <div className="col-md-3">
+            <div className="input-group mb-3">
+              <input type="text" id="searchInput" className="form-control" placeholder="Search by key terms..." aria-label="Search by key terms" aria-describedby="searchButton" />
+              <button className="btn btn-outline-success" type="button" onClick={applyFilters}>Search</button>
+            </div>
+          </div>
+
+          <div className="col-md-3">
+            <div className="input-group mb-3">
+              <input type="date" id="dateFilter" className="form-control" aria-label="Filter by date" />
+              <select id="dateType" className="form-select">
+                <option value="date_of_agreement">Date of Agreement</option>
+                <option value="expiry_date">Expiry Date</option>
+              </select>
+              <button className="btn btn-outline-success" type="button" onClick={applyFilters}>Filter</button>
+            </div>
+          </div>
+        </div>
+{/* search box end */}
+
+          <div className={styles['table-responsive']}>
+          <table className={`table table-bordered ${styles.table}`}>
               <thead className="thead-dark">
                 <tr>
                   <th>ID</th>

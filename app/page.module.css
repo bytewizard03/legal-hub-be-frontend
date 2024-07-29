@@ -1,0 +1,54 @@
+.table-responsive {
+    overflow-x: auto;
+    width: 100%;
+  }
+  
+.table {
+    width: 100%;
+    min-width: max-content;
+  }
+
+  .tableContainer {
+    border: 2px solid rgb(191 191 191);
+    border-radius: 10px;
+    background-color: #f8f9fa;
+  }
+
+  .pagination-container {
+    margin-top: 1rem;
+  }
+
+  .cardsContainer {
+    display: flex;
+    flex-wrap: wrap; 
+    gap: 1rem; 
+  }
+
+  .card {
+    border-radius: 0.375rem;
+    flex: 1 1 calc(33.333% - 1rem); /* Adjusts the width of each card to fit three in a row */
+    box-sizing: border-box;
+  }
+  
+  .logo {
+    max-height: 40px; /* Adjust the height of the logo */
+    margin-right: 10px; /* Optional: add some space between the logo and text */
+  }
+  
+  .custom-border {
+    border: 2px solid rgb(191 191 191); /* Primary color border */
+    border-radius: 10px; /* Border radius */
+    padding: 15px; /* Optional: Add padding */
+  }
+  
+  /* Loader styles */
+  #loader {
+    display: none; /* Initially hidden */
+    text-align: center;
+    margin-top: 20px;
+  }
+  
+  #loader .spinner-border {
+    margin-bottom: 10px;
+  }
+  
