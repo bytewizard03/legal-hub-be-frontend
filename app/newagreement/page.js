@@ -65,7 +65,7 @@ const fetchData = async () => {
 
       // to review the api
 
-      const response = await fetch('/api/upload', {
+      const response = await fetch('/legal/api/upload', {
         method: 'POST',
         body: formData,
       });
@@ -83,9 +83,13 @@ const fetchData = async () => {
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a); // Remove the anchor from the body
-          window.location.href = filled_document_path;
+          //window.location.href = filled_document_path;
 
-          window.location.href = `final_page.html?id=${id}&temp_file_path=${temp_file_path}&filled_document_path=${filled_document_path}`;
+          //window.location.href = `final_page.html?id=${id}&temp_file_path=${temp_file_path}&filled_document_path=${filled_document_path}`;
+          Router.push({
+            pathName: '/sendagreement',
+            query: { id, temp_file_path, filled_document_path },
+          });
         } else {
           console.error('Expected data is missing from the response.');
         }
