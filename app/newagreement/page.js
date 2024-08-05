@@ -1,55 +1,29 @@
 "use client";
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import Image from 'next/image';
-import styles from  './newagreement.module.css';
+import styles from './newagreement.module.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation'; // Import useRouter from next/navigation
 
-const fetchData = async () => {
-    try {
-      const response = await fetch('/api/data');
-      const data = await response.json();
-      const dataList = document.querySelector('.data-list > div');
-      dataList.innerHTML = ''; // Clear existing list items
-      data.forEach((item) => {
-        const div = document.createElement('div');
-        div.style.backgroundColor = '#fff';
-        div.style.borderRadius = '8px';
-        div.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
-        div.style.width = 'auto';
-        div.style.padding = '20px';
-        div.style.margin = '10px';
-        div.innerHTML = `
-          <h2 style="font-size: 18px; margin-bottom: 10px;">${item.registered_entity_name}</h2>
-          <p style="font-size: 14px; color: #000;">CIN: <b>${item.cin}</b></p>
-          <p style="font-size: 14px; color: #000;">Reviewer's Name: <b>${item.name}</b></p>
-          <p style="font-size: 14px; color: #000;">Reviewer's Email: <span style="font-size: 14px; color: #000;"><b>${item.email}</b></span></p>
-          <p style="font-size: 14px; color: #000;">Subject: <b>${item.subject}</b></p>
-          <p style="font-size: 14px; color: #000;">Uploaded PQFQ : <b><a href ="${item.uploaded_file}" >Link</a></b></p>
-          <p style="font-size: 14px; color: #000;">Final Agreement : <b><a href ="${item.final_link}" >Link</a></b></p>
-          <p style="font-size: 14px; color: #000;">Registered Entity Name: <b>${item.registered_entity_name}</b></p>
-          <p style="font-size: 14px; color: #000;">Date of agreement: <b>${item.date_of_agreement}</b></p>
-          <p style="font-size: 14px; color: #000;">Validity(in months): <b>${item.validity}</b></p>
-          <p style="font-size: 14px; color: #000;">Expiry date: <b>${item.expiry_date}</b></p>
-          <p style="font-size: 14px; color: #000;">Envelope Status: <b>${item.envelope_status}</b></p>
-        `;
-        dataList.appendChild(div);
-      });
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    }
-  };
+const NewAgreementPage = () => {
+  const [loaderVisible, setLoaderVisible] = useState(false);
+  const router = useRouter(); // Initialize router
+
+  // Use refs for form inputs
+  const fileInputRef = useRef(null);
+  const imageInputRef = useRef(null);
+  const fileTypeInputRef = useRef(null);
+  const reviewerNameInputRef = useRef(null);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const fileInput = document.getElementById('file');
-    const imageInput = document.getElementById('image');
-    const loader = document.getElementById('loader');
-    const fileType = document.getElementById('fileType').value;
-    const reviewerName = document.getElementById('reviewer_name').value;
+    const fileInput = fileInputRef.current;
+    const imageInput = imageInputRef.current;
+    const fileTypeInput = fileTypeInputRef.current;
+    const reviewerNameInput = reviewerNameInputRef.current;
 
-    if (fileInput.files.length === 0 || imageInput.files.length === 0) {
+    if (!fileInput.files.length || !imageInput.files.length) {
       alert('Please select both files to upload.');
       return;
     }
@@ -57,39 +31,40 @@ const fetchData = async () => {
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
     formData.append('image', imageInput.files[0]);
-    formData.append('file_type', fileType);
-    formData.append('reviewer_name', reviewerName);
+    formData.append('docFileType', fileTypeInput.value);
+    formData.append('reviewerName', reviewerNameInput.value);
+
+    // Debug: Log FormData entries
+    for (let pair of formData.entries()) {
+      console.log(`${pair[0]}: ${pair[1]}`);
+    }
 
     try {
-      loader.style.display = 'block'; // Show the loader
+      setLoaderVisible(true); // Show the loader
 
-      // to review the api
-
-      const response = await fetch('/legal/api/upload', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}legal/api/upload`, {
         method: 'POST',
         body: formData,
       });
 
-      loader.style.display = 'none'; // Hide the loader
+      setLoaderVisible(false); // Hide the loader
 
       if (response.ok) {
         const data = await response.json();
+        console.log('Response data:', data); // Debug response
         const { id, uploaded_file, temp_file_path, filled_document_path } = data;
 
-        if (id) {
+        if (id && uploaded_file && temp_file_path && filled_document_path) {
+          // Handle successful response
           const a = document.createElement('a');
           a.href = uploaded_file;
           a.download = 'agreement.docx'; // The name of the downloaded file
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a); // Remove the anchor from the body
-          //window.location.href = filled_document_path;
 
-          //window.location.href = `final_page.html?id=${id}&temp_file_path=${temp_file_path}&filled_document_path=${filled_document_path}`;
-          Router.push({
-            pathName: '/sendagreement',
-            query: { id, temp_file_path, filled_document_path },
-          });
+          // Navigate to the next page using Next.js router
+          router.push(`/sendagreement?id=${data.id}&temp_file_path=${data.temp_file_path}&filled_document_path=${data.filled_document_path}`);
         } else {
           console.error('Expected data is missing from the response.');
         }
@@ -97,16 +72,13 @@ const fetchData = async () => {
         alert('File upload failed. Status: ' + response.status);
       }
     } catch (error) {
-      loader.style.display = 'none'; // Hide the loader
+      setLoaderVisible(false); // Hide the loader
       alert('An error occurred during the file upload.');
       console.error('Error:', error);
     }
   };
 
-
-const NewAgreementPage = () => {
   return (
-    <>
     <div className={styles.body}>
       <div className="container">
         <div className="row justify-content-center">
@@ -130,43 +102,46 @@ const NewAgreementPage = () => {
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 <h2><b>Agreement Generator & Reviewer</b></h2>
               </div>
-              <form id="uploadForm" className="mt-3" onSubmit={handleSubmit}>
+              <form id="uploadForm" className="mt-3" encType="multipart/form-data" method="post" onSubmit={handleSubmit}>
                 <div className="mb-3">
-                  <label htmlFor="name" className="form-label">Enter Reviewer's Name:</label>
+                  <label htmlFor="reviewerNameInput" className="form-label">Enter Reviewer's Name:</label>
                   <input
                     type="text"
-                    id="reviewer_name"
-                    name="name"
+                    id="reviewerNameInput"
+                    name="reviewer_name"
                     className="form-control"
                     placeholder="Please enter your name..."
                     required
+                    ref={reviewerNameInputRef}
                   />
                 </div>
                 <div className="mb-3">
-                  <label htmlFor="file" className="form-label">Choose PQFQ Excel file:</label>
+                  <label htmlFor="fileInput" className="form-label">Choose PQFQ Excel file:</label>
                   <input
                     type="file"
-                    id="file"
+                    id="fileInput"
                     name="file"
                     className="form-control"
                     accept=".xlsx, .xls"
                     required
+                    ref={fileInputRef}
                   />
                 </div>
                 <div className="mb-3">
-                  <label htmlFor="image" className="form-label">Choose Product Image file:</label>
+                  <label htmlFor="imageInput" className="form-label">Choose Product Image file:</label>
                   <input
                     type="file"
-                    id="image"
+                    id="imageInput"
                     name="image"
                     className="form-control"
                     accept="image/*"
                     required
+                    ref={imageInputRef}
                   />
                 </div>
                 <div className="mb-3">
-                  <label htmlFor="fileType" className="form-label">Select File Type:</label>
-                  <select className="form-control" id="fileType" name="fileType" required>
+                  <label htmlFor="fileTypeInput" className="form-label">Select File Type:</label>
+                  <select className="form-control" id="fileTypeInput" name="file_type" required ref={fileTypeInputRef}>
                     <option value="no_liability">No liability agreement</option>
                     <option value="institute_isa">Institute ISA agreement</option>
                     <option value="digital_partner">Digital Partner agreement</option>
@@ -176,13 +151,12 @@ const NewAgreementPage = () => {
                   Upload
                 </button>
               </form>
-              <div className={styles.loader} id="loader"></div>
+              {loaderVisible && <div className={styles.loader} id="loader"></div>}
             </div>
           </div>
         </div>
       </div>
     </div>
-    </>
   );
 };
 
