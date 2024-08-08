@@ -87,24 +87,26 @@ function Home() {
         window.open(data.presigned_link, "_blank");
       } else {
         console.error("Error: No presigned link returned");
+        alert("No presigned link returned. Please try again later.");
       }
     } catch (error) {
       console.error("Error fetching presigned link:", error);
       alert("Failed to fetch presigned link. Please try again later.");
     }
   };
+  
 
   const fetchPresignedLink = async (fileUrl) => {
-    const formData = new FormData();
-    formData.append("file_url", fileUrl);
-
     const response = await fetch(`${baseUrl}legal/api/generate-presigned-link`, {
       method: "POST",
-      body: formData,
+      headers: {
+        'Content-Type': 'application/json'  // Ensure correct content type
+      },
+      body: JSON.stringify({ file_url: fileUrl })  // Use JSON.stringify for JSON body
     });
-
+  
     return response;
-  };
+  };  
 
   const updateCardCounts = (countData) => {
     setCountData(countData);
@@ -295,7 +297,7 @@ function Home() {
                     <tr key={rowData.id}>
                       <td>{rowData.id || ""}</td>
                       <td>{rowData.cin || ""}</td>
-                      <td>{rowData.name || ""}</td>
+                      <td>{rowData.reviewer_name || ""}</td>
                       <td>{rowData.email || ""}</td>
                       <td>{rowData.registered_entity_name || ""}</td>
                       <td>{formatDate(rowData.date_of_agreement) || ""}</td>
