@@ -30,7 +30,7 @@ function Home() {
 
     try {
       // to recheck
-      let apiUrl = `${baseUrl}/legal/api/get-envelops?page=${page}&limit=${itemsPerPage}`;
+      let apiUrl = `${baseUrl}legal/api/get-envelops?page=${page}&limit=${itemsPerPage}`;
       if (searchTerm) {
         apiUrl += `&search=${encodeURIComponent(searchTerm)}`;
       }
@@ -98,7 +98,7 @@ function Home() {
     const formData = new FormData();
     formData.append("file_url", fileUrl);
 
-    const response = await fetch(`${baseUrl}/legal/api/generate-presigned-link`, {
+    const response = await fetch(`${baseUrl}legal/api/generate-presigned-link`, {
       method: "POST",
       body: formData,
     });
