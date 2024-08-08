@@ -1,111 +1,86 @@
 "use client";
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import styles from  './sendagreement.module.css';
+import styles from './sendagreement.module.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const SendAgreement = () => {
   const router = useRouter();
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 8040; // Adjust this as necessary
+  const [loaderVisible, setLoaderVisible] = useState(false);
+  const [email, setEmail] = useState('');
+  const [subject, setSubject] = useState('');
+  const [name, setName] = useState('');
+  const [file, setFile] = useState(null);
+  const [iscorrect_file, setIscorrect_file] = useState(false);
+  const [tempLink, setTempLink] = useState('');
+  const [id, setId] = useState('');
 
-  // Function to extract URL parameters
-  const getUrlParameter = (name) => {
-    let results = null;
-    if (typeof window !== 'undefined'){
-    name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
-    const regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
-    results = regex.exec(window.location.search);
-    return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
-    }
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    setTempLink(urlParams.get('temp_file_path') || '');
+    console.log('Temp link from URL:', urlParams);
+    setId(urlParams.get('id') || '');
+  }, []);
+
+  const handleFileChange = (event) => {
+    setFile(event.target.files[0]);
   };
 
-  const fileUrl = getUrlParameter('filled_document_path');
-
-  const getPresignedLink = async (fileUrl) => {
-    try {
-      const response = await fetchPresignedLink(fileUrl);
-      const data = await response.json();
-      if (data && data.presigned_link) {
-        window.open(data.presigned_link, '_blank');
-      } else {
-        console.error('Error: No presigned link returned');
-      }
-    } catch (error) {
-      console.error('Error fetching presigned link:', error);
-      alert('Failed to fetch presigned link. Please try again later.');
-    }
+  const handleCorrectFileChange = (event) => {
+    setIscorrect_file(event.target.checked);
   };
 
-  const fetchPresignedLink = async (fileUrl) => {
-    const formData = new FormData();
-    formData.append('file_url', fileUrl);
-
-    const response = await fetch('/legal/api/generate-presigned-link', {
-      method: 'POST',
-      body: formData,
-    });
-
-    return response;
-  };
-
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    const email = document.getElementById('email').value;
-    const subject = document.getElementById('subject').value;
-    const fileInput = document.getElementById('file');
-    const loader = document.getElementById('loader');
-    const id = getUrlParameter('id');
-    const tempLink = getUrlParameter('temp_file_path');
-    const name = document.getElementById('signatory_name').value;
 
     const formData = new FormData();
     formData.append('email', email);
     formData.append('subject', subject);
-    formData.append('id', id);
     formData.append('name', name);
-
-    // Check if the file is correct
-    const isCorrect = document.getElementById('correct_file').checked;
-    if (isCorrect) {
-      formData.append('file_path', String(tempLink));
+    formData.append('id', id);
+    formData.append('file',file);
+    console.log("temp link is",tempLink)
+    if (iscorrect_file && tempLink) {
+      formData.append('filePath', tempLink);
+    } else if (file) {
+      formData.append('file', file);
     } else {
-      if (!fileInput.files[0]) {
-        alert('Please select a file to upload.');
-        return;
-      }
-      formData.append('file', fileInput.files[0]);
+      alert('Please select a file to upload.');
+      return;
     }
 
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', `${baseUrl}/legal/api/send-envelops`, true);
+    // Debug: Log FormData entries
+    for (let pair of formData.entries()) {
+      console.log(`${pair[0]}: ${pair[1]}`);
+    }
 
-    xhr.onloadstart = () => {
-      loader.style.display = 'block'; // Show the loader
-    };
+    try {
+      setLoaderVisible(true);
 
-    xhr.onload = () => {
-      loader.style.display = 'none'; // Hide the loader
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}legal/api/send-envelops`, {
+        method: 'POST',
+        body: formData,
+      });
 
-      if (xhr.status === 200) {
+      setLoaderVisible(false);
+
+      if (response.ok) {
+        const responseData = await response.text();
+        console.log('Response Data:', responseData);
         alert('Form submitted successfully!');
-        router.push(`${baseUrl}/legal/ui/`);
+        router.push('/');
       } else {
-        alert('Form submission failed. Status: ' + xhr.status);
+        const responseData = await response.text();
+        console.log('Failed Response Data:', responseData);
+        alert('Form submission failed. Status: ' + response.status + ', Message: ' + responseData);
       }
-    };
-
-    xhr.onerror = () => {
-      loader.style.display = 'none'; // Hide the loader
+    } catch (error) {
+      setLoaderVisible(false);
       alert('An error occurred during the file upload.');
-    };
-
-    xhr.send(formData);
+      console.error('Error:', error);
+    }
   };
-
-  useEffect(() => {
-    document.getElementById('uploadForm').addEventListener('submit', handleSubmit);
-  }, []);
 
   return (
     <div className={styles.container}>
@@ -114,37 +89,102 @@ const SendAgreement = () => {
           <div className={styles['form-container']}>
             <a className="navbar-brand d-flex justify-content-center align-items-center flex-column mb-3" href="#">
               <div className="py-3 d-flex justify-content-center align-items-center">
-                <img src="https://d1idiaqkpcnv43.cloudfront.net/assets/webimages/logo.png" alt="Logo" className="img-fluid" style={{ maxHeight: '50px', marginRight: '10px' }} />
+                <Image
+                  src="/eduvanz_logo.jpg"
+                  alt="Logo"
+                  width={100}
+                  height={40}
+                  style={{ marginRight: '10px' }}
+                />
               </div>
             </a>
             <h2><b>Send Agreement</b></h2>
-            <form id="uploadForm" className="mt-3">
+            <form id="uploadForm" className="mt-3" encType="multipart/form-data" method="post" onSubmit={handleSubmit}>
               <div className="mb-3">
-                <label htmlFor="name" className="form-label">Signatory's Name:</label>
-                <input type="text" id="signatory_name" name="name" className="form-control" placeholder="Please enter your signatory's name..." required />
+                <label htmlFor="signatory_name" className="form-label">Signatory's Name:</label>
+                <input
+                  type="text"
+                  id="signatory_name"
+                  name="name"
+                  className="form-control"
+                  placeholder="Please enter your signatory's name..."
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
               </div>
               <div className="mb-3">
                 <label htmlFor="email" className="form-label">Signatory's Email:</label>
-                <input type="email" id="email" name="email" className="form-control" placeholder="Please enter your signatory's email..." required />
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  className="form-control"
+                  placeholder="Please enter your signatory's email..."
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
               </div>
               <div className="mb-3">
                 <label htmlFor="subject" className="form-label">Subject:</label>
-                <input type="text" id="subject" name="subject" className="form-control" placeholder="Please enter the email subject..." required />
+                <input
+                  type="text"
+                  id="subject"
+                  name="subject"
+                  className="form-control"
+                  placeholder="Please enter the email subject..."
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  required
+                />
               </div>
               <div className="mb-3 form-check">
-                <input type="checkbox" id="correct_file" name="correct_file" className="form-check-input" />
+                <input
+                  type="checkbox"
+                  id="correct_file"
+                  name="correct_file"
+                  className="form-check-input"
+                  checked={iscorrect_file}
+                  onChange={handleCorrectFileChange}
+                />
                 <label htmlFor="correct_file" className="form-check-label">Generated file is correct?</label>
               </div>
               <div id="file-input" className="mb-3">
                 <label htmlFor="file" className="form-label">Choose File:</label>
-                <input type="file" id="file" name="file" accept=".docx" className="form-control" />
+                <input
+                  type="file"
+                  id="file"
+                  name="file"
+                  accept=".docx"
+                  className="form-control"
+                  onChange={handleFileChange}
+                />
               </div>
               <div className="d-flex justify-content-between">
-                <button type="button" id="downloadButton" className="btn btn-success" onClick={() => getPresignedLink(fileUrl)}>Download populated file</button>
-                <button type="submit" className="btn btn-success">Submit</button>
+                <button
+                  type="button"
+                  id="downloadButton"
+                  className="btn btn-success"
+                  onClick={() => {
+                    if (tempLink) {
+                      window.open(tempLink, '_blank');
+                    } else {
+                      alert('No file available for download.');
+                    }
+                  }}
+                >
+                  Download populated file
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-success"
+                >
+                  Submit
+                </button>
               </div>
             </form>
-            <div className={styles.loader} id="loader"></div>
+            {loaderVisible && <div className={styles.loader} id="loader"></div>}
           </div>
         </div>
       </div>
