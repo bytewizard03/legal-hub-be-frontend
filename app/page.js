@@ -8,9 +8,9 @@ import Link from 'next/link';
 function Home() {
   const [data,setData] = useState([]);
   const [countData,setCountData] = useState({
-    total_agreement: 0,
-    expiring_next_month: 0,
-    reviewal_count: 0,
+    totalAgreement: 0,
+    expiringNextMonth: 0,
+    reviewalCount: 0,
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -47,17 +47,17 @@ function Home() {
       if (Array.isArray(data) && data.length > 0) {
         // Handle counts from responseData if available
         const countData = {
-          total_agreement: responseData.counts.total_agreement,
-          expiring_next_month: responseData.counts.expiring_next_month,
-          reviewal_count: responseData.counts.reviewal_count,
+          totalAgreement: responseData.counts.totalAgreement,
+          expiringNextMonth: responseData.counts.expiringNextMonth,
+          reviewalCount: responseData.counts.reviewalCount,
         };
 
         console.log("Count data:", countData); // Log the count data for debugging
         setCountData(countData);
 
-        if (countData.total_agreement) {
-          setTotalItems(countData.total_agreement);
-          updatePagination(countData.total_agreement, currentPage);
+        if (countData.totalAgreement) {
+          setTotalItems(countData.totalAgreement);
+          updatePagination(countData.totalAgreement, currentPage);
         }
       } else {
         console.error("Invalid data structure:", data);
@@ -73,10 +73,7 @@ function Home() {
   const formatDate = (datetime) => {
     if (!datetime) return "";
     const date = new Date(datetime);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return date.toISOString().split("T")[0];
   };
 
   const getPresignedLink = async (fileUrl) => {
@@ -112,36 +109,56 @@ function Home() {
     setCountData(countData);
   };
 
+
   const updatePagination = (totalItems, currentPage) => {
     const totalPages = Math.ceil(totalItems / itemsPerPage);
     const paginationContainer = document.getElementById("pagination");
     paginationContainer.innerHTML = "";
-
+  
     const prevPageItem = document.createElement("li");
     prevPageItem.className = "page-item";
-    prevPageItem.innerHTML = `
-      <a class="page-link" href="#" aria-label="Previous" onClick={() => changePage('prev')}>
-        <span aria-hidden="true">&laquo;</span>
-      </a>
-    `;
+    const prevLink = document.createElement("a");
+    prevLink.className = "page-link";
+    prevLink.href = "#";
+    prevLink.setAttribute("aria-label", "Previous");
+    prevLink.innerHTML = '<span aria-hidden="true">&laquo;</span>';
+    prevLink.addEventListener("click", (event) => {
+      event.preventDefault();
+      changePage('prev');
+    });
+    prevPageItem.appendChild(prevLink);
     paginationContainer.appendChild(prevPageItem);
-
+  
     for (let i = 1; i <= totalPages; i++) {
       const pageItem = document.createElement("li");
       pageItem.className = `page-item ${i === currentPage ? "active" : ""}`;
-      pageItem.innerHTML = `<a class="page-link" href="#" onClick={() => changePage(${i})}>${i}</a>`;
+      const pageLink = document.createElement("a");
+      pageLink.className = "page-link";
+      pageLink.href = "#";
+      pageLink.innerText = i;
+      pageLink.addEventListener("click", (event) => {
+        event.preventDefault();
+        changePage(i);
+      });
+      pageItem.appendChild(pageLink);
       paginationContainer.appendChild(pageItem);
     }
-
+  
     const nextPageItem = document.createElement("li");
     nextPageItem.className = "page-item";
-    nextPageItem.innerHTML = `
-      <a class="page-link" href="#" aria-label="Next" onClick={() => changePage('next')}>
-        <span aria-hidden="true">&raquo;</span>
-      </a>
-    `;
+    const nextLink = document.createElement("a");
+    nextLink.className = "page-link";
+    nextLink.href = "#";
+    nextLink.setAttribute("aria-label", "Next");
+    nextLink.innerHTML = '<span aria-hidden="true">&raquo;</span>';
+    nextLink.addEventListener("click", (event) => {
+      event.preventDefault();
+      changePage('next');
+    });
+    nextPageItem.appendChild(nextLink);
     paginationContainer.appendChild(nextPageItem);
   };
+  
 
   const changePage = (action) => {
     const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -193,7 +210,7 @@ function Home() {
             <div className={`card border border-warning-subtle ${styles.card}`} id="card1">
               <div className="card-header bg-white">Reviewal Attention</div>
               <div className="card-body bg-warning-subtle" id="card1Body">
-                <p className="card-text">Renewal Count: {countData.reviewal_count}</p>
+                <p className="card-text">Renewal Count: {countData.reviewalCount}</p>
               </div>
             </div>
           </div>
@@ -201,7 +218,7 @@ function Home() {
             <div className={`card border border-danger-subtle ${styles.card}`} id="card2">
               <div className="card-header bg-white">Expiring next month</div>
               <div className="card-body bg-danger-subtle" id="card2Body">
-                <p className="card-text">Expiring Agreements Next Month: {countData.expiring_next_month}</p>
+                <p className="card-text">Expiring Agreements Next Month: {countData.expiringNextMonth}</p>
               </div>
             </div>
           </div>
@@ -209,7 +226,7 @@ function Home() {
             <div className={`card border border-success-subtle ${styles.card}`} id="card3">
               <div className="card-header bg-white">Total Number of Agreements</div>
               <div className="card-body bg-success-subtle" id="card3Body">
-                <p className="card-text">Total Number of Agreements: {countData.total_agreement}</p>
+                <p className="card-text">Total Number of Agreements: {countData.totalAgreement}</p>
               </div>
             </div>
           </div>
@@ -288,7 +305,7 @@ function Home() {
               </thead>
               <tbody id="tableBody">
                 {data.map(rowData => {
-                  const expiryDate = new Date(rowData.expiry_date);
+                  const expiryDate = new Date(rowData.expiryDate);
                   const today = new Date();
                   const timeDifference = expiryDate - today;
                   const daysLeftToExpire = Math.ceil(timeDifference / (1000 * 60 * 60 * 24));
@@ -300,11 +317,12 @@ function Home() {
                       <td>{rowData.reviewer_name || ""}</td>
                       <td>{rowData.email || ""}</td>
                       <td>{rowData.registered_entity_name || ""}</td>
-                      <td>{formatDate(rowData.date_of_agreement) || ""}</td>
+                      {/* <td>{formatDate(rowData.date_of_agreement) || ""}</td> */}
+                      <td>{rowData.date_of_agreement || ""}</td>
                       <td>{rowData.validity || ""}</td>
-                      <td>{rowData.expiry_date || ""}</td>
+                      <td>{rowData.expiryDate || ""}</td>
                       <td>{daysLeftToExpire || ""}</td>
-                      <td>{rowData.envelope_status || ""}</td>
+                      <td>{rowData.envelopeStatus || ""}</td>
                       <td>
                         {rowData.uploaded_file && (
                           <button className="btn btn-success" onClick={() => getPresignedLink(rowData.uploaded_file)}>
