@@ -167,6 +167,7 @@ const SendAgreement = () => {
                   id="downloadButton"
                   className="btn btn-success"
                   onClick={() => {
+                    console.log('Temp link:', tempLink); // Log the link for debugging
                     if (tempLink) {
                       window.open(tempLink, '_blank');
                     } else {

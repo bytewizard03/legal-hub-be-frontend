@@ -4,6 +4,7 @@ import styles from  './page.module.css';
 import Image from 'next/image';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Link from 'next/link';
+import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 
 function Home() {
   const [data,setData] = useState([]);
@@ -31,8 +32,13 @@ function Home() {
     try {
       // to recheck
       let apiUrl = `${baseUrl}legal/api/get-envelops?page=${page}&limit=${itemsPerPage}`;
+      // if (searchTerm) {
+      //   apiUrl += `&search=${encodeURIComponent(searchTerm)}`;
+      // }
+       // Append searchTerm only if it's not empty
       if (searchTerm) {
-        apiUrl += `&search=${encodeURIComponent(searchTerm)}`;
+        // apiUrl += `&search_term=${searchTerm}`;
+        apiUrl += searchTerm;
       }
 
       const response = await fetch(apiUrl);
@@ -69,6 +75,11 @@ function Home() {
       showError("Failed to load data. Please check your connection and try again.");
     }
   };
+
+  const handleSearchChange  = (e) => {
+    const  query = `&search_term=${e.target.value}`;
+     fetchData(1,query);
+  }
 
   const formatDate = (datetime) => {
     if (!datetime) return "";
@@ -171,14 +182,48 @@ function Home() {
     }
   };
 
+  // const performSearch = () => {
+  //   setCurrentPage(1); // Reset to first page when performing a new search
+  //   fetchData(1, searchTerm);
+  // };
+
   const performSearch = () => {
+   // const searchTerm = document.getElementById('searchTerm').value;
     setCurrentPage(1); // Reset to first page when performing a new search
     fetchData(1, searchTerm);
   };
+  
 
-  function applyFilters() {
-    fetchData(1);
- }
+//   function applyFilters() {
+//     fetchData(1);
+//  }
+
+const applyFilters = () => {
+  // Read values from filters
+  const agreementStatus = document.getElementById('agreementStatus')?.value;
+  const fileType = document.getElementById('doc_file_type')?.value;
+  const searchInput = document.getElementById('searchTerm')?.value;
+ // const dateFilter = document.getElementById('dateFilter')?.value;
+ // const dateType = document.getElementById('dateType')?.value;
+  //const dateTypeName = document.getElementsByClassName('dateType').value;
+
+  // Construct the search term and filter parameters
+  let filters = [];
+  if (agreementStatus) filters.push(`envelope_status=${encodeURIComponent(agreementStatus)}`);
+  if (fileType) filters.push(`doc_name=${encodeURIComponent(fileType)}`);
+  if (searchInput) filters.push(`search_term=${encodeURIComponent(searchInput)}`);
+  //if (dateFilter && dateType) filters.push(`${encodeURIComponent(dateType)}=${encodeURIComponent(dateFilter)}`);
+  //if(dateType === 'date_of_agreement') filters.push(`date_of_agreement=${encodeURIComponent(dateType)}`);
+  //if(dateType === 'expiryDate') filters.push(`expiryDate=${encodeURIComponent(dateType)}`);
+
+  //const searchParams = searchInput ? `search=${encodeURIComponent(searchInput)}` : '';
+  //const filterParams = filters.length ? `&${filters.join('&')}` : '';
+  const filterParams = filters.length ? `&${filters.join('&')}` : '';
+
+  //fetchData(1, searchParams + filterParams);
+  fetchData(1, filterParams);
+};
+
 
   const showError = (message) => {
     const tableBody = document.getElementById("tableBody");
@@ -255,7 +300,7 @@ function Home() {
 
           <div className="col-md-3">
             <div className="input-group mb-3">
-              <select id="fileType" className="form-select">
+              <select id="doc_file_type" className="form-select">
                 <option value="">Select document type</option>
                 <option value="no_liability">No liability agreement</option>
                 <option value="institute_isa">Institute ISA agreement</option>
@@ -267,7 +312,16 @@ function Home() {
 
           <div className="col-md-3">
             <div className="input-group mb-3">
-              <input type="text" id="searchInput" className="form-control" placeholder="Search by key terms..." aria-label="Search by key terms" aria-describedby="searchButton" />
+              <input type="text" id="searchTerm" className="form-control"  placeholder="Search by key terms..." 
+              // value={searchTerm}
+               onChange={(e) => handleSearchChange(e)}
+               onKeyDown={(e) => {
+                 if (e.key === 'Enter') {
+                    // performSearch();
+                   applyFilters();
+                 }
+               }}
+               aria-label="Search by key terms" aria-describedby="searchButton" />
               <button className="btn btn-outline-success" type="button" onClick={applyFilters}>Search</button>
             </div>
           </div>
@@ -277,7 +331,7 @@ function Home() {
               <input type="date" id="dateFilter" className="form-control" aria-label="Filter by date" />
               <select id="dateType" className="form-select">
                 <option value="date_of_agreement">Date of Agreement</option>
-                <option value="expiry_date">Expiry Date</option>
+                <option value="expiryDate">Expiry Date</option>
               </select>
               <button className="btn btn-outline-success" type="button" onClick={applyFilters}>Filter</button>
             </div>
@@ -317,8 +371,8 @@ function Home() {
                       <td>{rowData.reviewer_name || ""}</td>
                       <td>{rowData.email || ""}</td>
                       <td>{rowData.registered_entity_name || ""}</td>
-                      {/* <td>{formatDate(rowData.date_of_agreement) || ""}</td> */}
-                      <td>{rowData.date_of_agreement || ""}</td>
+                      <td>{formatDate(rowData.date_of_agreement) || ""}</td>
+                      {/* <td>{rowData.date_of_agreement || ""}</td> */}
                       <td>{rowData.validity || ""}</td>
                       <td>{rowData.expiryDate || ""}</td>
                       <td>{daysLeftToExpire || ""}</td>
