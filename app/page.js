@@ -1,14 +1,13 @@
 "use client";
-import React, {useState, useEffect} from 'react';
-import styles from  './page.module.css';
+import React, { useState, useEffect, useRef } from 'react';
+import styles from './page.module.css';
 import Image from 'next/image';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Link from 'next/link';
-import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 
 function Home() {
-  const [data,setData] = useState([]);
-  const [countData,setCountData] = useState({
+  const [data, setData] = useState([]);
+  const [countData, setCountData] = useState({
     totalAgreement: 0,
     expiringNextMonth: 0,
     reviewalCount: 0,
@@ -16,70 +15,64 @@ function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
-  const itemsPerPage = 20;
+  const [pagination, setPagination] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
+  const itemsPerPage = 20;
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
 
-  
+  const loaderRef = useRef(null);
+  const tableBodyRef = useRef(null);
+  const agreementStatusRef = useRef(null);
+  const docFileTypeRef = useRef(null);
+  const searchTermRef = useRef(null);
+  const dateFilterRef = useRef(null);
+  const dateTypeRef = useRef(null);
+
   useEffect(() => {
     fetchData(currentPage, searchTerm);
   }, [currentPage, searchTerm]);
 
+  useEffect(() => {
+    updatePagination(totalItems, currentPage);
+  }, [totalItems, currentPage]);
+
   const fetchData = async (page = 1, searchTerm = "") => {
-    const loader = document.getElementById('loader');
-    loader.style.display = 'block'; // Show loader
+    setLoading(true);
+    setError('');
+
+    if (loaderRef.current) {
+      loaderRef.current.style.display = 'block'; // Show loader
+    }
 
     try {
-      // to recheck
       let apiUrl = `${baseUrl}legal/api/get-envelops?page=${page}&limit=${itemsPerPage}`;
-      // if (searchTerm) {
-      //   apiUrl += `&search=${encodeURIComponent(searchTerm)}`;
-      // }
-       // Append searchTerm only if it's not empty
       if (searchTerm) {
-        // apiUrl += `&search_term=${searchTerm}`;
         apiUrl += searchTerm;
       }
 
       const response = await fetch(apiUrl);
       const responseData = await response.json();
-      console.log("Fetched data:", responseData); // Log the fetched data for debugging
 
-      loader.style.display = 'none';
-
-      const data = responseData.envelops || [];
-      setData(data);
-
-      if (Array.isArray(data) && data.length > 0) {
-        // Handle counts from responseData if available
-        const countData = {
-          totalAgreement: responseData.counts.totalAgreement,
-          expiringNextMonth: responseData.counts.expiringNextMonth,
-          reviewalCount: responseData.counts.reviewalCount,
-        };
-
-        console.log("Count data:", countData); // Log the count data for debugging
-        setCountData(countData);
-
-        if (countData.totalAgreement) {
-          setTotalItems(countData.totalAgreement);
-          updatePagination(countData.totalAgreement, currentPage);
-        }
-      } else {
-        console.error("Invalid data structure:", data);
-        showError("Failed to load data. Please try again later.");
-      }
+      setData(responseData.envelops || []);
+      setCountData(responseData.counts || {});
+      setTotalItems(responseData.counts.totalAgreement || 0);
     } catch (error) {
       console.error("Error fetching data:", error);
-      loader.style.display = 'none'; // Hide loader on error
-      showError("Failed to load data. Please check your connection and try again.");
+      setError("Failed to load data. Please check your connection and try again.");
+    } finally {
+      setLoading(false);
+      if (loaderRef.current) {
+        loaderRef.current.style.display = 'none'; // Hide loader
+      }
     }
   };
 
-  const handleSearchChange  = (e) => {
-    const  query = `&search_term=${e.target.value}`;
-     fetchData(1,query);
-  }
+  const handleSearchChange = (e) => {
+    setSearchTerm(`&search_term=${e.target.value}`);
+    fetchData(1, `&search_term=${e.target.value}`);
+  };
 
   const formatDate = (datetime) => {
     if (!datetime) return "";
@@ -102,132 +95,71 @@ function Home() {
       alert("Failed to fetch presigned link. Please try again later.");
     }
   };
-  
 
   const fetchPresignedLink = async (fileUrl) => {
     const response = await fetch(`${baseUrl}legal/api/generate-presigned-link`, {
       method: "POST",
       headers: {
-        'Content-Type': 'application/json'  // Ensure correct content type
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ file_url: fileUrl })  // Use JSON.stringify for JSON body
+      body: JSON.stringify({ file_url: fileUrl })
     });
-  
+
     return response;
-  };  
-
-  const updateCardCounts = (countData) => {
-    setCountData(countData);
   };
-
 
   const updatePagination = (totalItems, currentPage) => {
     const totalPages = Math.ceil(totalItems / itemsPerPage);
-    const paginationContainer = document.getElementById("pagination");
-    paginationContainer.innerHTML = "";
-  
-    const prevPageItem = document.createElement("li");
-    prevPageItem.className = "page-item";
-    const prevLink = document.createElement("a");
-    prevLink.className = "page-link";
-    prevLink.href = "#";
-    prevLink.setAttribute("aria-label", "Previous");
-    prevLink.innerHTML = '<span aria-hidden="true">&laquo;</span>';
-    prevLink.addEventListener("click", (event) => {
-      event.preventDefault();
-      changePage('prev');
-    });
-    prevPageItem.appendChild(prevLink);
-    paginationContainer.appendChild(prevPageItem);
-  
+    let pages = [];
+
     for (let i = 1; i <= totalPages; i++) {
-      const pageItem = document.createElement("li");
-      pageItem.className = `page-item ${i === currentPage ? "active" : ""}`;
-      const pageLink = document.createElement("a");
-      pageLink.className = "page-link";
-      pageLink.href = "#";
-      pageLink.innerText = i;
-      pageLink.addEventListener("click", (event) => {
-        event.preventDefault();
-        changePage(i);
-      });
-      pageItem.appendChild(pageLink);
-      paginationContainer.appendChild(pageItem);
+      pages.push(
+        <li key={i} className={`page-item ${i === currentPage ? "active" : ""}`}>
+          <a className="page-link" href="#" onClick={(e) => {
+            e.preventDefault();
+            setCurrentPage(i);
+          }}>{i}</a>
+        </li>
+      );
     }
-  
-    const nextPageItem = document.createElement("li");
-    nextPageItem.className = "page-item";
-    const nextLink = document.createElement("a");
-    nextLink.className = "page-link";
-    nextLink.href = "#";
-    nextLink.setAttribute("aria-label", "Next");
-    nextLink.innerHTML = '<span aria-hidden="true">&raquo;</span>';
-    nextLink.addEventListener("click", (event) => {
-      event.preventDefault();
-      changePage('next');
-    });
-    nextPageItem.appendChild(nextLink);
-    paginationContainer.appendChild(nextPageItem);
-  };
-  
 
-  const changePage = (action) => {
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
-    if (action === "prev" && currentPage > 1) {
-      setCurrentPage(prevPage => prevPage - 1);
-    } else if (action === "next" && currentPage < totalPages) {
-      setCurrentPage(prevPage => prevPage + 1);
-    } else if (typeof action === "number") {
-      setCurrentPage(action);
-    }
+    setPagination([
+      <li key="prev" className="page-item">
+        <a className="page-link" href="#" aria-label="Previous" onClick={(e) => {
+          e.preventDefault();
+          setCurrentPage(prev => Math.max(prev - 1, 1));
+        }}>
+          <span aria-hidden="true">&laquo;</span>
+        </a>
+      </li>,
+      ...pages,
+      <li key="next" className="page-item">
+        <a className="page-link" href="#" aria-label="Next" onClick={(e) => {
+          e.preventDefault();
+          setCurrentPage(prev => Math.min(prev + 1, totalPages));
+        }}>
+          <span aria-hidden="true">&raquo;</span>
+        </a>
+      </li>
+    ]);
   };
 
-  // const performSearch = () => {
-  //   setCurrentPage(1); // Reset to first page when performing a new search
-  //   fetchData(1, searchTerm);
-  // };
+  const applyFilters = () => {
+    const agreementStatus = agreementStatusRef.current?.value;
+    const fileType = docFileTypeRef.current?.value;
+    const searchInput = searchTermRef.current?.value;
+    const dateFilter = dateFilterRef.current?.value;
+    const dateType = dateTypeRef.current?.value;
 
-  const performSearch = () => {
-   // const searchTerm = document.getElementById('searchTerm').value;
-    setCurrentPage(1); // Reset to first page when performing a new search
-    fetchData(1, searchTerm);
-  };
-  
+    let filters = [];
+    if (agreementStatus) filters.push(`envelope_status=${encodeURIComponent(agreementStatus)}`);
+    if (fileType) filters.push(`doc_name=${encodeURIComponent(fileType)}`);
+    if (searchInput) filters.push(`search_term=${encodeURIComponent(searchInput)}`);
+    if (dateType && dateFilter) filters.push(`${dateType}=${encodeURIComponent(dateFilter)}`);
 
-//   function applyFilters() {
-//     fetchData(1);
-//  }
+    const filterParams = filters.length ? `&${filters.join('&')}` : '';
 
-const applyFilters = () => {
-  // Read values from filters
-  const agreementStatus = document.getElementById('agreementStatus')?.value;
-  const fileType = document.getElementById('doc_file_type')?.value;
-  const searchInput = document.getElementById('searchTerm')?.value;
- // const dateFilter = document.getElementById('dateFilter')?.value;
- // const dateType = document.getElementById('dateType')?.value;
-  //const dateTypeName = document.getElementsByClassName('dateType').value;
-
-  // Construct the search term and filter parameters
-  let filters = [];
-  if (agreementStatus) filters.push(`envelope_status=${encodeURIComponent(agreementStatus)}`);
-  if (fileType) filters.push(`doc_name=${encodeURIComponent(fileType)}`);
-  if (searchInput) filters.push(`search_term=${encodeURIComponent(searchInput)}`);
-  //if (dateFilter && dateType) filters.push(`${encodeURIComponent(dateType)}=${encodeURIComponent(dateFilter)}`);
-  //if(dateType === 'date_of_agreement') filters.push(`date_of_agreement=${encodeURIComponent(dateType)}`);
-  //if(dateType === 'expiryDate') filters.push(`expiryDate=${encodeURIComponent(dateType)}`);
-
-  //const searchParams = searchInput ? `search=${encodeURIComponent(searchInput)}` : '';
-  //const filterParams = filters.length ? `&${filters.join('&')}` : '';
-  const filterParams = filters.length ? `&${filters.join('&')}` : '';
-
-  //fetchData(1, searchParams + filterParams);
-  fetchData(1, filterParams);
-};
-
-
-  const showError = (message) => {
-    const tableBody = document.getElementById("tableBody");
-    tableBody.innerHTML = `<tr><td colspan="13" class="text-center text-danger">${message}</td></tr>`;
+    fetchData(1, filterParams);
   };
 
   return (
@@ -278,18 +210,20 @@ const applyFilters = () => {
         </div>
         <div className={`row custom-border p-3 ${styles.tableContainer}`}>
           {/* Loader element */}
-          <div id="loader" className="text-center my-3">
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Loading...</span>
+          {loading && (
+            <div className="text-center my-3">
+              <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">Loading...</span>
+              </div>
             </div>
-            <p className="mt-2">Loading data...</p>
-          </div>
+          )}
 
           {/* search box */}
+          {error && <div className="text-center text-danger">{error}</div>}
         <div className="row">
           <div className="col-md-3">
             <div className="input-group mb-3">
-              <select id="agreementStatus" className="form-select">
+              <select id="agreementStatus" className="form-select" ref={agreementStatusRef}>
                 <option value="">Select Agreement Status</option>
                 <option value="sent">Sent</option>
                 <option value="completed">Completed</option>
@@ -300,7 +234,7 @@ const applyFilters = () => {
 
           <div className="col-md-3">
             <div className="input-group mb-3">
-              <select id="doc_file_type" className="form-select">
+              <select id="doc_file_type" className="form-select" ref={docFileTypeRef}>
                 <option value="">Select document type</option>
                 <option value="no_liability">No liability agreement</option>
                 <option value="institute_isa">Institute ISA agreement</option>
@@ -310,7 +244,7 @@ const applyFilters = () => {
             </div>
           </div>
 
-          <div className="col-md-3">
+          {/* <div className="col-md-3">
             <div className="input-group mb-3">
               <input type="text" id="searchTerm" className="form-control"  placeholder="Search by key terms..." 
               // value={searchTerm}
@@ -324,12 +258,25 @@ const applyFilters = () => {
                aria-label="Search by key terms" aria-describedby="searchButton" />
               <button className="btn btn-outline-success" type="button" onClick={applyFilters}>Search</button>
             </div>
-          </div>
+          </div> */}
+             <div className="col-md-3">
+              <div className="input-group mb-3">
+                <input
+                  type="text"
+                  className="form-control"
+                  id="searchTerm"
+                  ref={searchTermRef}
+                  placeholder="Search"
+                  onChange={handleSearchChange}
+                />
+                <button className="btn btn-outline-success" type="button" onClick={applyFilters}>Search</button>
+              </div>
+            </div>
 
           <div className="col-md-3">
             <div className="input-group mb-3">
-              <input type="date" id="dateFilter" className="form-control" aria-label="Filter by date" />
-              <select id="dateType" className="form-select">
+              <input type="date" id="dateFilter" className="form-control" ref={dateFilterRef} />
+              <select id="dateType" className="form-select" ref={dateTypeRef}>
                 <option value="date_of_agreement">Date of Agreement</option>
                 <option value="expiryDate">Expiry Date</option>
               </select>
@@ -340,7 +287,7 @@ const applyFilters = () => {
 {/* search box end */}
 
           <div className={styles['table-responsive']}>
-          <table className={`table table-bordered ${styles.table}`}>
+          <table className={`table table-bordered ${styles.table}`} ref={tableBodyRef}>
               <thead className="thead-dark">
                 <tr>
                   <th>ID</th>
@@ -371,8 +318,8 @@ const applyFilters = () => {
                       <td>{rowData.reviewer_name || ""}</td>
                       <td>{rowData.email || ""}</td>
                       <td>{rowData.registered_entity_name || ""}</td>
-                      <td>{formatDate(rowData.date_of_agreement) || ""}</td>
-                      {/* <td>{rowData.date_of_agreement || ""}</td> */}
+                      {/* <td>{formatDate(rowData.date_of_agreement) || ""}</td> */}
+                      <td>{rowData.date_of_agreement || ""}</td>
                       <td>{rowData.validity || ""}</td>
                       <td>{rowData.expiryDate || ""}</td>
                       <td>{daysLeftToExpire || ""}</td>
@@ -399,8 +346,8 @@ const applyFilters = () => {
           </div>
           <div className="pagination-container py-2" style={{ textAlign: 'center' }}>
             <nav aria-label="Page navigation">
-              <ul className="pagination justify-content-center" id="pagination">
-                {/* Pagination will be generated dynamically */}
+              <ul className="pagination justify-content-center" >
+                {pagination}
               </ul>
             </nav>
           </div>
