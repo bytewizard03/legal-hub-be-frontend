@@ -39,9 +39,10 @@ const SendAgreement = () => {
     formData.append('subject', subject);
     formData.append('name', name);
     formData.append('id', id);
+    formData.append('correct_file',iscorrect_file);
     formData.append('file',file);
     console.log("temp link is",tempLink)
-    if (iscorrect_file && tempLink) {
+    if (tempLink) {
       formData.append('filePath', tempLink);
     } else if (file) {
       formData.append('file', file);
@@ -49,6 +50,20 @@ const SendAgreement = () => {
       alert('Please select a file to upload.');
       return;
     }
+    // if (iscorrect_file) {
+    //   if (tempLink) {
+    //     formData.append('filePath', tempLink);
+    //   } else {
+    //     alert('No file available for download. Please check the generated file.');
+    //     return;
+    //   }
+    // } else {
+    //   if (file) {
+    //     formData.append('file', file);
+    //   }
+    //   // If no file is selected and `iscorrect_file` is unchecked, no error is thrown
+    // }
+
 
     // Debug: Log FormData entries
     for (let pair of formData.entries()) {
@@ -159,6 +174,7 @@ const SendAgreement = () => {
                   accept=".docx"
                   className="form-control"
                   onChange={handleFileChange}
+                  //disabled={!iscorrect_file}
                 />
               </div>
               <div className="d-flex justify-content-between">
@@ -167,6 +183,7 @@ const SendAgreement = () => {
                   id="downloadButton"
                   className="btn btn-success"
                   onClick={() => {
+                    //const tempLink = 
                     console.log('Temp link:', tempLink); // Log the link for debugging
                     if (tempLink) {
                       window.open(tempLink, '_blank');
