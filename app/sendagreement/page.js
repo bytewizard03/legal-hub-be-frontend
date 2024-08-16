@@ -5,6 +5,8 @@ import Image from 'next/image';
 import styles from './sendagreement.module.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+
 const SendAgreement = () => {
   const router = useRouter();
   const [loaderVisible, setLoaderVisible] = useState(false);
@@ -29,6 +31,34 @@ const SendAgreement = () => {
 
   const handleCorrectFileChange = (event) => {
     setIscorrect_file(event.target.checked);
+  };
+
+  const getPresignedLink = async (fileUrl) => {
+    try {
+      const response = await fetchPresignedLink(fileUrl);
+      const data = await response.json();
+      if (data && data.presigned_link) {
+        window.open(data.presigned_link, "_blank");
+      } else {
+        console.error("Error: No presigned link returned");
+        alert("No presigned link returned. Please try again later.");
+      }
+    } catch (error) {
+      console.error("Error fetching presigned link:", error);
+      alert("Failed to fetch presigned link. Please try again later.");
+    }
+  };
+
+  const fetchPresignedLink = async (fileUrl) => {
+    const response = await fetch(`${baseUrl}legal/api/generate-presigned-link`, {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ file_url: fileUrl })
+    });
+
+    return response;
   };
 
   const handleSubmit = async (event) => {
@@ -182,15 +212,7 @@ const SendAgreement = () => {
                   type="button"
                   id="downloadButton"
                   className="btn btn-success"
-                  onClick={() => {
-                    //const tempLink = 
-                    console.log('Temp link:', tempLink); // Log the link for debugging
-                    if (tempLink) {
-                      window.open(tempLink, '_blank');
-                    } else {
-                      alert('No file available for download.');
-                    }
-                  }}
+                  onClick={() => getPresignedLink(tempLink)}
                 >
                   Download populated file
                 </button>

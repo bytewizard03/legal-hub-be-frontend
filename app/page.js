@@ -244,21 +244,6 @@ function Home() {
             </div>
           </div>
 
-          {/* <div className="col-md-3">
-            <div className="input-group mb-3">
-              <input type="text" id="searchTerm" className="form-control"  placeholder="Search by key terms..." 
-              // value={searchTerm}
-               onChange={(e) => handleSearchChange(e)}
-               onKeyDown={(e) => {
-                 if (e.key === 'Enter') {
-                    // performSearch();
-                   applyFilters();
-                 }
-               }}
-               aria-label="Search by key terms" aria-describedby="searchButton" />
-              <button className="btn btn-outline-success" type="button" onClick={applyFilters}>Search</button>
-            </div>
-          </div> */}
              <div className="col-md-3">
               <div className="input-group mb-3">
                 <input
